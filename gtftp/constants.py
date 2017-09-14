@@ -1,17 +1,17 @@
 # -*- coding:utf-8 -*-
 
 
-# TFTP opcodes
-OPCODE_RRQ = 1
-OPCODE_WRQ = 2
-OPCODE_DATA = 3
-OPCODE_ACK = 4
-OPCODE_ERROR = 5
-OPCODE_OACK = 6
+# # TFTP opcodes
+# OPCODE_RRQ = 1
+# OPCODE_WRQ = 2
+# OPCODE_DATA = 3
+# OPCODE_ACK = 4
+# OPCODE_ERROR = 5
+# OPCODE_OACK = 6
 
-# TFTP modes (encodings)
-MODE_NETASCII = 'netascii'
-MODE_BINARY = 'octet'
+# # TFTP modes (encodings)
+# MODE_NETASCII = 'netascii'
+# MODE_BINARY = 'octet'
 
 # # TFTP error codes
 # ERR_UNDEFINED = 0  # Not defined, see error msg (if any) - RFC 1350.

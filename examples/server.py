@@ -1,8 +1,11 @@
+# -*- coding: utf-8 -*-
+
 import os
+import io
 
 from gtftp.server import Server
 from gtftp.handler import BaseReadHandler, Target
-from gtftp import constants
+from gtftp.packet import *
 
 
 class FileResponseData(Target):
@@ -19,14 +22,35 @@ class FileResponseData(Target):
     def close(self):
         self._reader.close()
 
+
+class StringResponseData(Target):
+    def __init__(self, path):
+        if not isinstance(path, unicode):
+            path = str(path).decode('utf-8')
+
+        content = (path + u"\n") * 30
+        self._size = len(content)
+        self._io = io.StringIO(content)
+
+    def read(self, n):
+        return self._io.read(n)
+
+    def size(self):
+        return self._size
+
+    def close(self):
+        self._io.close()
+
+
 class StaticHandler(BaseReadHandler):
-    def __init__(self, server_addr, peer, path, mode, retries, timeout, options, root):
+    def __init__(self, req, server_addr, peer, retries, timeout, root):
         self._root = root
 
-        super(StaticHandler, self).__init__(server_addr, peer, path, mode, retries, timeout, options)
+        super(StaticHandler, self).__init__(req, server_addr, peer, retries, timeout)
 
     def get_target(self, path):
         return FileResponseData(os.path.join(self._root, path))
+        # return StringResponseData(os.path.join(self._root, path))
 
 
 class StaticServer(Server):
@@ -35,11 +59,11 @@ class StaticServer(Server):
         super(StaticServer, self).__init__(ip, port, retries, timeout, concurrency)
 
 
-    def get_hanlder(self, server_addr, peer, code, path, mode, retries, timeout, options):
-        if code == constants.OPCODE_RRQ:
-            return StaticHandler(server_addr, peer, path, mode, retries, timeout, options, self._root)
+    def get_hanlder(self, req, server_addr, peer, retries, timeout):
+        if req.opcode == Packet.OPCODE_RRQ:
+            return StaticHandler(req, server_addr, peer, retries, timeout, self._root)
         else:
-            print "do not handle WRQ"
+            raise Exception(u"do not handle WRQ")
 
 
 if __name__ == '__main__':

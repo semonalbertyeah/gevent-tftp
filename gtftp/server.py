@@ -4,7 +4,7 @@ import struct
 from gevent.server import DatagramServer
 from gevent import socket
 
-from . import constants
+from .packet import *
 from .logger import logger
 
 
@@ -12,7 +12,7 @@ class UdpServer(DatagramServer):
     """
         Tuned for TFTP server
     """
-    def __init__(self, listener, handle=None, spawn='default', blksize=constants.DEFAULT_BLKSIZE):
+    def __init__(self, listener, handle=None, spawn='default', blksize=Data.DEFAULT_BLKSIZE):
         """
             extra parameters to DatagramServer:
                 blksize -> receive block size
@@ -47,52 +47,14 @@ class Server(object):
             This func is called in a new greenlet.
         """
 
-        req_info = self.parse_request(data)
-        if req_info:
-            code, path, mode, options = req_info
+        req = Request.parse(data)
+        if req:
             handler = self.get_hanlder(
-                (self.host, self.port),
-                peer, code, path, mode, 
-                self._retries, self._timeout, 
-                options
+                req, (self.host, self.port), peer, 
+                self._retries, self._timeout
             )
             handler.run()
 
-
-    @staticmethod
-    def parse_request(data):
-        '''
-            parse WRQ/RRQ request.
-            return:
-                (code, path, mode, options)
-                or
-                None if no valid request
-        '''
-        code = struct.unpack('!H', data[:2])[0]
-        if code not in (constants.OPCODE_RRQ, constants.OPCODE_WRQ):
-            logger.warning(u"invalid request opcode: %d" % code)
-            return None
-
-        tokens = filter(
-            bool, 
-            data[2:].decode('latin-1').split(u'\x00')
-        )
-
-        if len(tokens) < 2 or len(tokens) % 2 != 0:
-            logger.warning('malformed packet, not even number of tokens')
-            return None
-
-        path = tokens[0]
-        mode = tokens[1].lower()
-
-        options = {}
-        pos = 2
-
-        while pos < len(tokens):
-            options[tokens[pos].lower()] = tokens[pos + 1]
-            pos += 2
-
-        return (code, path, mode, options)
 
     @property
     def host(self):
@@ -106,10 +68,15 @@ class Server(object):
         self._udp_server.serve_forever()
 
 
-    def get_hanlder(self, server_addr, peer, code, path, mode, retries, timeout, options):
+    def get_hanlder(self, req, server_addr, peer, retries, timeout):
         """
             override this method to offer a handler.
-            code: RRQ or WRQ
+            input:
+                req -> instance of gtftp.packet.Request
+                servre_addr -> (host, port)
+                peer -> (host, port)
+                retries -> times of retranmission when timeout.
+                timeout -> timeout of receiving packets.
         """
         raise NotImplemented()
 
