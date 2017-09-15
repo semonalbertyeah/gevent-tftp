@@ -39,6 +39,9 @@ class NetasciiReader(object):
         self._buffer = bytearray(data[size:])
         return str(data[:size])
 
+    def write(self, data):
+        raise NotImplemented()
+
     def close(self):
         self._reader.close()
 
@@ -57,8 +60,14 @@ class NetasciiReader(object):
 
 
 class NetasciiWriter(object):
+    """
+        To write netascii data to a file.
+    """
     def __init__(self, writer):
         self._writer = writer
+
+    def read(self, size):
+        raise NotImplemented()
 
     def write(self, data):
         """
@@ -70,18 +79,25 @@ class NetasciiWriter(object):
 
         idx = 0
         data_len = len(data)
+        enc_data = []
         while idx < data_len:
             char = data[idx]
-            if char == ord(u'\r') and data[idx+1] == ord(u'\n'):
-                self._writer.write(u'\n'.encode('ascii'))
+            next_char = data[idx+1]
+            if (char == ord(u'\r')) and (next_char == ord(u'\n')):
+                enc_data.append(u'\n'.encode(u'ascii'))
                 idx += 1
-            elif char == ord(u'\r') and data[idx+1] == ord(u'\0'):
-                self._writer.write(u'\r')
+            elif (char == ord(u'\r')) and (next_char == ord(u'\0')):
+                enc_data.append(u'\r'.encode(u'ascii'))
                 idx += 1
             else:
-                self._writer.write(chr(char))
+                enc_data.append(chr(char))
 
             idx += 1
+
+        self._writer.write(''.join(enc_data))
+
+    def size(self):
+        raise NotImplemented()
 
     def close(self):
         self._writer.close()

@@ -203,6 +203,7 @@ class Data(Packet):
 
     MAX_BLOCK_NUMBER = 65535
     DEFAULT_BLKSIZE = 512
+    # DEFAULT_BLKSIZE = 508
 
     def __init__(self, block_number, data):
         """

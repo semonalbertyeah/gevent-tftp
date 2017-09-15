@@ -4,23 +4,26 @@ import os
 import io
 
 from gtftp.server import Server
-from gtftp.handler import BaseReadHandler, Target
+from gtftp.handler import BaseReadHandler, BaseWriteHandler, Target
 from gtftp.packet import *
 
 
-class FileResponseData(Target):
-    def __init__(self, path):
+class LocalFileTarget(Target):
+    def __init__(self, path, mode=u'rb'):
+        self._target = open(path, mode)
         self._size = os.stat(path).st_size
-        self._reader = open(path, 'rb')
 
     def read(self, n):
-        return self._reader.read(n)
+        return self._target.read(n)
+
+    def write(self, data):
+        self._target.write(data)
 
     def size(self):
         return self._size
 
     def close(self):
-        self._reader.close()
+        self._target.close()
 
 
 class StringResponseData(Target):
@@ -42,15 +45,24 @@ class StringResponseData(Target):
         self._io.close()
 
 
-class StaticHandler(BaseReadHandler):
+class StaticReadHandler(BaseReadHandler):
     def __init__(self, req, server_addr, peer, retries, timeout, root):
         self._root = root
 
-        super(StaticHandler, self).__init__(req, server_addr, peer, retries, timeout)
+        super(StaticReadHandler, self).__init__(req, server_addr, peer, retries, timeout)
 
     def get_target(self, path):
-        return FileResponseData(os.path.join(self._root, path))
-        # return StringResponseData(os.path.join(self._root, path))
+        return LocalFileTarget(os.path.join(self._root, path), u'rb')
+
+
+class StaticWriteHandler(BaseWriteHandler):
+    def __init__(self, req, server_addr, peer, retries, timeout, root):
+        self._root = root
+
+        super(StaticWriteHandler, self).__init__(req, server_addr, peer, retries, timeout)
+
+    def get_target(self, path):
+        return LocalFileTarget(os.path.join(self._root, path), u'wb+')
 
 
 class StaticServer(Server):
@@ -61,7 +73,9 @@ class StaticServer(Server):
 
     def get_hanlder(self, req, server_addr, peer, retries, timeout):
         if req.opcode == Packet.OPCODE_RRQ:
-            return StaticHandler(req, server_addr, peer, retries, timeout, self._root)
+            return StaticReadHandler(req, server_addr, peer, retries, timeout, self._root)
+        elif req.opcode == Packet.OPCODE_WRQ:
+            return StaticWriteHandler(req, server_addr, peer, retries, timeout, self._root)
         else:
             raise Exception(u"do not handle WRQ")
 

@@ -1,3 +1,9 @@
 Test case:
-    1. retransmission of OACK
-    2. wait last ack
+    read:
+        1. retransmission of OACK
+        2. wait last ack
+        3. end session at first block
+
+    write:
+        1. without options
+        2. with options
