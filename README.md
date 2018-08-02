@@ -1,6 +1,6 @@
 # Usage example
 
-```
+```python
 import os
 import io
 
